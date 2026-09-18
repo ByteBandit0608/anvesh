@@ -1,0 +1,36 @@
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: anvesh
+      POSTGRES_USER: anvesh
+      POSTGRES_PASSWORD: anvesh
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U anvesh"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/anvesh
+      DB_USER: anvesh
+      DB_PASSWORD: anvesh
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-hash}
+      ONNX_MODEL_PATH: /models/paraphrase-multilingual-MiniLM-L12-v2/model.onnx
+      ONNX_TOKENIZER_PATH: /models/paraphrase-multilingual-MiniLM-L12-v2/tokenizer.json
+    volumes:
+      - ./models:/models:ro
+    ports:
+      - "8080:8080"
+
+volumes:
+  pgdata:

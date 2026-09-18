@@ -1,0 +1,5 @@
+# Activated with: ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
+logging:
+  level:
+    dev.bhavya.anvesh: DEBUG
+    org.springframework.jdbc.core: DEBUG

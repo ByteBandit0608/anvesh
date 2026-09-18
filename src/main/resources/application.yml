@@ -1,0 +1,48 @@
+spring:
+  application:
+    name: anvesh
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/anvesh}
+    username: ${DB_USER:anvesh}
+    password: ${DB_PASSWORD:anvesh}
+  flyway:
+    enabled: true
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+
+springdoc:
+  swagger-ui:
+    path: /docs
+
+anvesh:
+  embedding:
+    # "hash" = deterministic, dependency-free embedder for tests/dev.
+    # "onnx" = real multilingual model (see docs/EMBEDDINGS.md for download steps).
+    provider: ${EMBEDDING_PROVIDER:hash}
+    dimension: 384
+    onnx:
+      model-path: ${ONNX_MODEL_PATH:models/paraphrase-multilingual-MiniLM-L12-v2/model.onnx}
+      tokenizer-path: ${ONNX_TOKENIZER_PATH:models/paraphrase-multilingual-MiniLM-L12-v2/tokenizer.json}
+      max-tokens: 256
+  chunking:
+    max-chars: 800
+    overlap-chars: 100
+  search:
+    default-limit: 10
+    max-limit: 50
+    rrf-k: 60
+    candidate-multiplier: 4   # each retriever fetches limit*multiplier before fusion

@@ -1,0 +1,12 @@
+[
+  {"title": "Data drift", "language": "en", "metadata": {"topic": "ml"},
+   "body": "Data drift happens when the statistical properties of input features change over time. A model trained on last year's data can silently degrade. Monitoring tools such as Evidently AI compare feature distributions between a reference window and the current window and raise alerts when drift is detected, so the team can retrain before accuracy collapses."},
+  {"title": "REST pagination", "language": "en", "metadata": {"topic": "backend"},
+   "body": "Pagination limits how many records an API returns per request. Offset pagination uses page and size parameters and is simple but slow on deep pages. Cursor pagination returns an opaque token pointing at the last seen row and stays fast regardless of depth. Sorting should be stable, so always add a unique tiebreaker column such as id."},
+  {"title": "Telangana electricity demand", "language": "en", "metadata": {"topic": "energy"},
+   "body": "Electricity demand in Telangana peaks in the summer months of April and May when air-conditioning load rises with temperature. Agricultural pumping adds a second peak during the rabi season. Weather variables such as temperature and humidity are strong predictors of daily load."},
+  {"title": "తెలుగు వెబ్ యాక్సెసిబిలిటీ", "language": "te", "metadata": {"topic": "accessibility"},
+   "body": "తెలుగు వాడుకరుల కోసం వెబ్‌సైట్లు అందుబాటులో ఉండాలంటే స్క్రీన్ రీడర్లు తెలుగు యూనికోడ్ అక్షరాలను సరిగ్గా చదవగలగాలి। చాలా టెక్స్ట్-టు-స్పీచ్ ఇంజిన్లు సంయుక్తాక్షరాలను తప్పుగా ఉచ్చరిస్తాయి। ఐఎస్ 17802 ప్రమాణం భారతీయ భాషల కోసం యాక్సెసిబిలిటీ అవసరాలను నిర్వచిస్తుంది।"},
+  {"title": "విద్యుత్ డిమాండ్", "language": "te", "metadata": {"topic": "energy"},
+   "body": "వేసవి కాలంలో ఉష్ణోగ్రత పెరిగినప్పుడు తెలంగాణలో విద్యుత్ డిమాండ్ గరిష్ట స్థాయికి చేరుతుంది। ఎయిర్ కండిషనర్ల వాడకం పెరగడం దీనికి ప్రధాన కారణం। వాతావరణ సమాచారం ఆధారంగా రోజువారీ లోడ్‌ను అంచనా వేయవచ్చు।"}
+]
