@@ -31,7 +31,7 @@ public class HashEmbeddingService implements EmbeddingService {
         if (text == null || text.isBlank()) return v;
 
         String norm = text.toLowerCase(Locale.ROOT);
-        for (String word : norm.split("[^\\p{L}\\p{N}]+")) {
+        for (String word : norm.split("[^\\p{L}\\p{M}\\p{N}]+")) {
             if (word.isEmpty()) continue;
             addFeature(v, "w:" + word, 1.0f);
             // Character trigrams give partial-match signal (e.g. inflected forms).

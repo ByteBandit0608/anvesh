@@ -23,6 +23,7 @@ import java.time.Duration;
 import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -66,6 +67,17 @@ class AnveshIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.duplicate").value(true))
                 .andExpect(jsonPath("$.id").value(id));
+
+        // Regression: natural-language queries with stop words must still hit in keyword mode.
+        // (With AND semantics + 'simple' config this returned 0 hits and hybrid silently became vector-only.)
+        mvc.perform(get("/api/v1/search").param("q", "why does model accuracy drop over time").param("mode", "keyword"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.count").value(greaterThanOrEqualTo(1)))
+                .andExpect(jsonPath("$.hits[0].documentId").value(id));
+
+        // tsquery syntax in user input must not cause a 500.
+        mvc.perform(get("/api/v1/search").param("q", "drift & (monitoring | !x):*").param("mode", "keyword"))
+                .andExpect(status().isOk());
 
         for (String mode : new String[]{"hybrid", "vector", "keyword"}) {
             mvc.perform(get("/api/v1/search").param("q", "drift monitoring").param("mode", mode))

@@ -69,6 +69,16 @@ Reference numbers with the quantised model:
 
 ## Known limits / follow-ups
 
+- **Same-language bias.** For the Telugu query "వేసవిలో కరెంటు వాడకం ఎందుకు పెరుగుతుంది" (why does
+  electricity usage rise in summer), the Telugu *accessibility* document outranked the English
+  *electricity* document even though the latter is topically closer. Multilingual models trained
+  with parallel-sentence distillation share a space across languages only approximately; vectors
+  still cluster by script/language, so an off-topic same-language document can edge out an
+  on-topic other-language one. Mitigations to evaluate in Week 3: (a) query translation — embed the
+  query in both languages and fuse the two vector rankings with RRF; (b) a stronger model such as
+  `bge-m3`, which is trained explicitly for cross-lingual retrieval; (c) a metadata `language`
+  filter when the user's intent is monolingual.
+
 - Model was trained with `max_seq_length=128`; we allow 256 tokens. Telugu tokenizes into many
   more pieces than English, so an 800-char Telugu chunk may hit the limit and be truncated.
   **Week-1 task:** log `token_count` per chunk and tune `anvesh.chunking.max-chars`.
