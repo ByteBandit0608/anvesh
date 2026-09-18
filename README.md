@@ -5,7 +5,7 @@
 > using **Reciprocal Rank Fusion**. Embeddings run locally via ONNX — no API keys, works offline,
 > supports 50+ languages including Telugu.
 
-[![CI](https://github.com/<you>/anvesh/actions/workflows/ci.yml/badge.svg)](https://github.com/<you>/anvesh/actions)
+[![CI](https://github.com/<you>/anvesh/actions/workflows/ci.yml/badge.svg)](https://github.com/ByteBandit0608/anvesh/actions)
 
 ## Why this exists
 
