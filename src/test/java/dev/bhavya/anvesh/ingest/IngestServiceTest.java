@@ -1,5 +1,6 @@
 package dev.bhavya.anvesh.ingest;
 
+import dev.bhavya.anvesh.cache.SearchCacheService;
 import dev.bhavya.anvesh.common.ConflictException;
 import dev.bhavya.anvesh.document.Document;
 import dev.bhavya.anvesh.document.DocumentRepository;
@@ -32,6 +33,7 @@ class IngestServiceTest {
 
     DocumentRepository repo;
     PlatformTransactionManager txm;
+    SearchCacheService cache;
     IngestService service;
     UUID id = UUID.randomUUID();
 
@@ -39,14 +41,15 @@ class IngestServiceTest {
     void setUp() {
         repo = mock(DocumentRepository.class);
         txm = mock(PlatformTransactionManager.class);
+        cache = mock(SearchCacheService.class);
         when(txm.getTransaction(any())).thenAnswer(inv -> new SimpleTransactionStatus());
         service = new IngestService(repo, new TextChunker(800, 100),
-                new HashEmbeddingService(384), new TransactionTemplate(txm), new SimpleMeterRegistry());
+                new HashEmbeddingService(384), new TransactionTemplate(txm), new SimpleMeterRegistry(), cache);
     }
 
     @Test
     void submit_newDocument_isQueued() {
-        when(repo.insertOrGetExisting(any(), any(), any(), any(), any(), any())).thenReturn(new DocumentRepository.Upsert(id, true));
+        when(repo.insertOrGetExisting(any(), any(), any(), any(), any(), any(), any())).thenReturn(new DocumentRepository.Upsert(id, true));
         IngestService.Submission s = service.submit("t", null, "en", "{}", "body");
         assertThat(s.duplicate()).isFalse();
         assertThat(s.needsIndex()).isTrue();
@@ -56,18 +59,18 @@ class IngestServiceTest {
 
     @Test
     void submit_duplicateStillPending_isNotQueuedAgain() {
-        when(repo.insertOrGetExisting(any(), any(), any(), any(), any(), any())).thenReturn(new DocumentRepository.Upsert(id, false));
+        when(repo.insertOrGetExisting(any(), any(), any(), any(), any(), any(), any())).thenReturn(new DocumentRepository.Upsert(id, false));
         when(repo.markPendingIfFailed(id)).thenReturn(false);
         when(repo.findById(id)).thenReturn(Optional.of(doc(Document.Status.PENDING)));
         IngestService.Submission s = service.submit("t", null, "en", "{}", "body");
         assertThat(s.duplicate()).isTrue();
-        assertThat(s.needsIndex()).isFalse();          // <- the race fix: no second indexer
+        assertThat(s.needsIndex()).isFalse();
         assertThat(s.status()).isEqualTo(Document.Status.PENDING);
     }
 
     @Test
     void submit_duplicateThatFailed_isRetriedOnce() {
-        when(repo.insertOrGetExisting(any(), any(), any(), any(), any(), any())).thenReturn(new DocumentRepository.Upsert(id, false));
+        when(repo.insertOrGetExisting(any(), any(), any(), any(), any(), any(), any())).thenReturn(new DocumentRepository.Upsert(id, false));
         when(repo.markPendingIfFailed(id)).thenReturn(true);
         IngestService.Submission s = service.submit("t", null, "en", "{}", "body");
         assertThat(s.duplicate()).isTrue();
@@ -80,8 +83,8 @@ class IngestServiceTest {
         service.index(id, "Some body text that will become exactly one chunk.");
 
         InOrder order = inOrder(repo, txm);
-        order.verify(txm).getTransaction(any());          // transaction opened AFTER embedding
-        order.verify(repo).lockForIndexing(id);           // row lock is the first statement inside it
+        order.verify(txm).getTransaction(any());
+        order.verify(repo).lockForIndexing(id);
         order.verify(repo).deleteChunks(id);
         order.verify(repo).insertChunks(eq(id), anyList(), anyList());
         order.verify(repo).markIndexed(id);
@@ -99,18 +102,17 @@ class IngestServiceTest {
         InOrder order = inOrder(repo, txm);
         order.verify(txm).getTransaction(any());
         order.verify(repo).insertChunks(eq(id), anyList(), anyList());
-        order.verify(txm).rollback(any(TransactionStatus.class));  // insert is undone with it
-        order.verify(repo).markFailed(eq(id), contains("connection reset")); // AFTER rollback, so it commits
+        order.verify(txm).rollback(any(TransactionStatus.class));
+        order.verify(repo).markFailed(eq(id), contains("connection reset"));
         verify(txm, never()).commit(any());
     }
 
     @Test
     void embeddingHappensBeforeTransactionOpens() {
-        // If embedding threw, no transaction should ever have been started.
         EmbeddingService exploding = mock(EmbeddingService.class);
         when(exploding.embedAll(anyList())).thenThrow(new IllegalStateException("model exploded"));
         IngestService broken = new IngestService(repo, new TextChunker(800, 100),
-                exploding, new TransactionTemplate(txm), new SimpleMeterRegistry());
+                exploding, new TransactionTemplate(txm), new SimpleMeterRegistry(), cache);
 
         broken.index(id, "body");
 
@@ -122,8 +124,9 @@ class IngestServiceTest {
     @Test
     void reindex_isRejectedWhenAnotherIndexerAlreadyWon() {
         when(repo.findById(id)).thenReturn(Optional.of(doc(Document.Status.PENDING)));
+        when(repo.findByIdAndOwner(any(), any())).thenReturn(Optional.of(doc(Document.Status.PENDING)));
         when(repo.findBody(id)).thenReturn(Optional.of("body"));
-        when(repo.markPendingForReindex(id)).thenReturn(false);   // CAS lost
+        when(repo.markPendingForReindex(id)).thenReturn(false);
 
         assertThatThrownBy(() -> service.reindex(id))
                 .isInstanceOf(ConflictException.class)
@@ -134,6 +137,7 @@ class IngestServiceTest {
     @Test
     void reindex_rejectsDocumentsWithoutStoredBody() {
         when(repo.findById(id)).thenReturn(Optional.of(doc(Document.Status.INDEXED)));
+        when(repo.findByIdAndOwner(any(), any())).thenReturn(Optional.of(doc(Document.Status.INDEXED)));
         when(repo.findBody(id)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.reindex(id)).isInstanceOf(ConflictException.class);
@@ -141,7 +145,7 @@ class IngestServiceTest {
     }
 
     private Document doc(Document.Status status) {
-        return new Document(id, "t", null, "en", "{}", "hash", status, null, Instant.now(), null);
+        return new Document(id, "t", null, "en", "{}", "hash", status, null, Instant.now(), null, "public");
     }
 
     @Test

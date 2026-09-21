@@ -11,6 +11,8 @@ spring:
     multipart:
       max-file-size: 20MB
       max-request-size: 20MB
+  cache:
+    type: none
 
 server:
   port: 8080
@@ -23,23 +25,29 @@ management:
   endpoint:
     health:
       show-details: always
+  metrics:
+    tags:
+      application: ${spring.application.name}
 
 springdoc:
   swagger-ui:
     path: /docs
 
+logging:
+  level:
+    dev.bhavya.anvesh: INFO
+    org.springframework.jdbc: WARN
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} [req=%X{requestId}] - %msg%n"
+
 anvesh:
   embedding:
-    # "hash" = deterministic, dependency-free embedder for tests/dev.
-    # "onnx" = real multilingual model (see docs/EMBEDDINGS.md for download steps).
     provider: ${EMBEDDING_PROVIDER:hash}
     dimension: 384
     onnx:
       model-path: ${ONNX_MODEL_PATH:models/paraphrase-multilingual-MiniLM-L12-v2/model.onnx}
       tokenizer-path: ${ONNX_TOKENIZER_PATH:models/paraphrase-multilingual-MiniLM-L12-v2/tokenizer.json}
       max-tokens: 256
-      # true  = one inference at a time (Week-0 behaviour). false = concurrent ingest threads run inference in parallel.
-      # Benchmark both with scripts/bench_ingest.py — the answer depends on your core count.
       serialize-inference: ${ONNX_SERIALIZE:false}
   chunking:
     max-chars: 800
@@ -48,6 +56,17 @@ anvesh:
     default-limit: 10
     max-limit: 50
     rrf-k: 60
-    candidate-multiplier: 4   # each retriever fetches limit*multiplier before fusion
+    candidate-multiplier: 4
   ingest:
-    max-batch-size: 100       # POST /documents/batch cap; the ingest queue holds 500
+    max-batch-size: 100
+  security:
+    require-api-key: ${ANVESH_REQUIRE_API_KEY:false}
+    anonymous-owner: public
+  rate-limit:
+    enabled: ${ANVESH_RATE_LIMIT_ENABLED:true}
+    requests-per-minute: ${ANVESH_RPM:60}
+    burst-capacity: ${ANVESH_BURST:20}
+  cache:
+    enabled: ${ANVESH_CACHE_ENABLED:true}
+    max-size: 1000
+    ttl-minutes: 5

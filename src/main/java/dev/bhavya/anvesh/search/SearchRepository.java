@@ -28,10 +28,12 @@ public class SearchRepository {
      * @param language  exact match on documents.language (e.g. "te"), or null
      * @param metadata  JSONB containment: documents.metadata @> metadata (e.g. {"topic":"ml"}), or null.
      *                  Containment uses the GIN index from V1 — this is the whole reason metadata is JSONB.
+     * @param ownerId   tenant filter — null means no owner filter (backward compat for tests that don't set it)
      */
-    public record Filter(String language, String metadataJson) {
-        public static final Filter NONE = new Filter(null, null);
-        boolean isEmpty() { return language == null && metadataJson == null; }
+    public record Filter(String language, String metadataJson, String ownerId) {
+        public static final Filter NONE = new Filter(null, null, null);
+        public Filter(String language, String metadataJson) { this(language, metadataJson, null); }
+        boolean isEmpty() { return language == null && metadataJson == null && ownerId == null; }
     }
 
     /** Cosine similarity via pgvector's {@code <=>} (cosine distance) operator; uses the HNSW index. */
@@ -52,10 +54,6 @@ public class SearchRepository {
         args.add(vec);
         args.add(limit);
         // WHY explicit "\n" before ORDER BY / LIMIT: text-block concatenation is brittle.
-        // `where` is e.g. " AND d.language = ?" with no trailing newline. The previous version did
-        //   """ + where + """\nORDER BY... but the second block's leading newline is stripped by
-        // the text-block spec, so it became "...?ORDER BY..." -> syntax error near BY when a filter
-        // was present. Explicit "\n" makes the separator unconditional.
         String sql = """
                 SELECT c.id AS chunk_id, c.document_id, d.title, c.content,
                        1 - (c.embedding <=> ?::vector) AS score
@@ -66,20 +64,6 @@ public class SearchRepository {
         return jdbc.query(sql, MAPPER, args.toArray());
     }
 
-    /**
-     * Keyword search with Postgres full-text, using OR semantics.
-     *
-     * <p>Why OR: {@code websearch_to_tsquery} ANDs every term, and the {@code 'simple'} config
-     * (chosen so Telugu isn't mangled by English stemming) does not remove stop words. So the
-     * natural-language query "why does model accuracy drop over time" became
-     * {@code why & does & model & ... & time} and matched nothing — silently turning hybrid
-     * search into vector-only search. With OR, any matching term qualifies a chunk, and
-     * {@code ts_rank_cd} still ranks chunks that match more terms higher. RRF then only
-     * consumes the rank order, so recall goes up without hurting precision at the top.
-     *
-     * <p>Stop-word noise ("why", "does") is tolerable: those terms are rare in indexed text,
-     * so they add little to the score when they do match.
-     */
     public List<SearchHit> keywordSearch(String query, int limit) {
         return keywordSearch(query, limit, Filter.NONE);
     }
@@ -113,18 +97,13 @@ public class SearchRepository {
             sb.append(" AND d.metadata @> ?::jsonb");
             args.add(f.metadataJson());
         }
+        if (f.ownerId() != null) {
+            sb.append(" AND d.owner_id = ?");
+            args.add(f.ownerId());
+        }
         return sb.toString();
     }
 
-    /**
-     * Builds a {@code to_tsquery}-compatible string: terms joined with {@code |}, each quoted
-     * so tsquery syntax characters in user input ({@code & | ! ( ) : *}) can't break the query.
-     *
-     * <p>Splits on anything that is not a letter, digit <em>or combining mark</em> ({@code \p{M}}).
-     * The mark class matters: Telugu vowel signs and the virama (e.g. {@code ి} in {@code వి},
-     * {@code ్} in {@code త్}) are combining marks, and splitting on them shreds
-     * {@code విద్యుత్} into {@code వ ద య త}. Same applies to Hindi, Tamil, Arabic diacritics, etc.
-     */
     static String toOrQuery(String query) {
         if (query == null) return "";
         List<String> terms = new ArrayList<>();

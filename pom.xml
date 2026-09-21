@@ -22,6 +22,8 @@
         <springdoc.version>2.6.0</springdoc.version>
         <onnxruntime.version>1.19.2</onnxruntime.version>
         <djl.version>0.30.0</djl.version>
+        <bucket4j.version>8.7.0</bucket4j.version>
+        <caffeine.version>3.1.8</caffeine.version>
     </properties>
 
     <dependencies>
@@ -81,6 +83,32 @@
             <groupId>ai.djl.huggingface</groupId>
             <artifactId>tokenizers</artifactId>
             <version>${djl.version}</version>
+        </dependency>
+
+        <!-- Week 4: rate limiting + caching -->
+        <dependency>
+            <groupId>com.bucket4j</groupId>
+            <artifactId>bucket4j-core</artifactId>
+            <version>${bucket4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+            <version>${caffeine.version}</version>
+        </dependency>
+
+        <!-- Week 4: structured JSON logs (optional, falls back to pattern if not configured) -->
+        <dependency>
+            <groupId>net.logstash.logback</groupId>
+            <artifactId>logstash-logback-encoder</artifactId>
+            <version>7.4</version>
+        </dependency>
+
+        <!-- Week 5: Redis (optional, used if REDIS_URL set) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+            <optional>true</optional>
         </dependency>
 
         <!-- Testing -->

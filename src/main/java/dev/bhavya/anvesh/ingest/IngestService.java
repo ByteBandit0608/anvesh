@@ -1,7 +1,9 @@
 package dev.bhavya.anvesh.ingest;
 
+import dev.bhavya.anvesh.cache.SearchCacheService;
 import dev.bhavya.anvesh.common.ConflictException;
 import dev.bhavya.anvesh.common.NotFoundException;
+import dev.bhavya.anvesh.common.RequestContext;
 import dev.bhavya.anvesh.document.Document;
 import dev.bhavya.anvesh.document.DocumentRepository;
 import dev.bhavya.anvesh.embedding.EmbeddingService;
@@ -38,14 +40,16 @@ public class IngestService {
     private final EmbeddingService embeddings;
     private final TransactionTemplate tx;
     private final Timer indexTimer;
+    private final SearchCacheService cache;
 
     public IngestService(DocumentRepository documents, TextChunker chunker, EmbeddingService embeddings,
-                         TransactionTemplate tx, MeterRegistry metrics) {
+                         TransactionTemplate tx, MeterRegistry metrics, SearchCacheService cache) {
         this.documents = documents;
         this.chunker = chunker;
         this.embeddings = embeddings;
         this.tx = tx;
         this.indexTimer = Timer.builder("anvesh.ingest.index").description("Time to chunk+embed+store a document").register(metrics);
+        this.cache = cache;
     }
 
     /**
@@ -56,8 +60,12 @@ public class IngestService {
     public record Submission(UUID id, boolean duplicate, Document.Status status, boolean needsIndex) {}
 
     public Submission submit(String title, String source, String language, String metadataJson, String body) {
+        return submit(title, source, language, metadataJson, body, RequestContext.ownerId());
+    }
+
+    public Submission submit(String title, String source, String language, String metadataJson, String body, String ownerId) {
         String hash = sha256Hex(body);
-        DocumentRepository.Upsert up = documents.insertOrGetExisting(title, source, language, metadataJson, hash, body);
+        DocumentRepository.Upsert up = documents.insertOrGetExisting(title, source, language, metadataJson, hash, body, ownerId);
         if (up.inserted()) {
             return new Submission(up.id(), false, Document.Status.PENDING, true);
         }
@@ -78,7 +86,17 @@ public class IngestService {
      * @throws ConflictException if the document is currently PENDING (already being indexed), or has no stored body
      */
     public void reindex(UUID id) {
-        documents.findById(id).orElseThrow(() -> new NotFoundException("Document " + id + " not found"));
+        String ownerId = RequestContext.ownerId();
+        var doc = documents.findByIdAndOwner(id, ownerId)
+                .orElse(documents.findById(id).orElseThrow(() -> new NotFoundException("Document " + id + " not found")));
+        // Enforce owner check: if doc owner != requester and requester != public, 404 (don't leak existence)
+        if (!doc.ownerId().equals(ownerId) && !"public".equals(ownerId)) {
+            // For public mode we allow reindex of any doc (backward compat). In strict mode, check owner.
+            // To keep simple: if owner mismatch and owner is not public, treat as not found.
+            if (!"public".equals(doc.ownerId())) {
+                throw new NotFoundException("Document " + id + " not found");
+            }
+        }
         String body = documents.findBody(id)
                 .orElseThrow(() -> new ConflictException("Document " + id + " has no stored body (ingested before V2); re-ingest it"));
         // WHY a conditional UPDATE and not "read status, then update": two requests could both read
@@ -125,6 +143,14 @@ public class IngestService {
                     // If markIndexed throws, the delete and insert above are rolled back with it:
                     // the document keeps its previous chunks (if any) and the catch below marks it FAILED.
                 });
+
+                // Invalidate search cache for this owner — new content should be searchable immediately.
+                try {
+                    var doc = documents.findById(id);
+                    doc.ifPresent(d -> cache.invalidateByOwner(d.ownerId()));
+                } catch (Exception e) {
+                    log.warn("Failed to invalidate cache after indexing {}", id, e);
+                }
 
                 log.info("Indexed document {} into {} chunks", id, chunks.size());
             } catch (Exception e) {

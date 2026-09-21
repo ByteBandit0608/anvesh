@@ -1,0 +1,21 @@
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+    <!-- When ANVESH_JSON_LOGS=true, output JSON via logstash encoder -->
+    <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <includeMdcKeyName>requestId</includeMdcKeyName>
+            <includeMdcKeyName>method</includeMdcKeyName>
+            <includeMdcKeyName>uri</includeMdcKeyName>
+            <includeContext>false</includeContext>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="${ANVESH_JSON_LOGS:false ? 'JSON_CONSOLE' : 'CONSOLE'}"/>
+    </root>
+
+    <logger name="dev.bhavya.anvesh" level="INFO"/>
+    <logger name="org.springframework.jdbc" level="WARN"/>
+</configuration>

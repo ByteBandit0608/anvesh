@@ -15,10 +15,51 @@ services:
       timeout: 3s
       retries: 10
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 5
+
+  prometheus:
+    image: prom/prometheus:v2.53.2
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - promdata:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    depends_on:
+      - app
+
+  grafana:
+    image: grafana/grafana:11.2.2
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: anvesh
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./observability/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./observability/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./observability/grafana/dashboards-json:/var/lib/grafana/dashboards:ro
+      - grafanadata:/var/lib/grafana
+    depends_on:
+      - prometheus
+
   app:
     build: .
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     environment:
       DB_URL: jdbc:postgresql://db:5432/anvesh
@@ -27,6 +68,11 @@ services:
       EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-hash}
       ONNX_MODEL_PATH: /models/paraphrase-multilingual-MiniLM-L12-v2/model.onnx
       ONNX_TOKENIZER_PATH: /models/paraphrase-multilingual-MiniLM-L12-v2/tokenizer.json
+      ANVESH_REQUIRE_API_KEY: ${ANVESH_REQUIRE_API_KEY:-false}
+      ANVESH_RATE_LIMIT_ENABLED: ${ANVESH_RATE_LIMIT_ENABLED:-true}
+      ANVESH_CACHE_ENABLED: ${ANVESH_CACHE_ENABLED:-true}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
     volumes:
       - ./models:/models:ro
     ports:
@@ -34,3 +80,6 @@ services:
 
 volumes:
   pgdata:
+  redisdata:
+  promdata:
+  grafanadata:

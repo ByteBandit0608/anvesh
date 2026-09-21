@@ -34,38 +34,54 @@ public class DocumentRepository {
             Document.Status.valueOf(rs.getString("status")),
             rs.getString("error"),
             rs.getTimestamp("created_at").toInstant(),
-            Optional.ofNullable(rs.getTimestamp("indexed_at")).map(Timestamp::toInstant).orElse(null)
+            Optional.ofNullable(rs.getTimestamp("indexed_at")).map(Timestamp::toInstant).orElse(null),
+            rs.getString("owner_id")
     );
 
     /** Result of an idempotent insert: the row's id and whether *this* call created it. */
     public record Upsert(UUID id, boolean inserted) {}
 
     /**
-     * Inserts, or returns the existing id when an identical body was already ingested.
+     * Inserts, or returns the existing id when an identical body was already ingested
+     * for the same owner. Owner-scoped dedup: two tenants can ingest same body independently.
      * WHY "inserted" is returned instead of inferred later from chunk count: a document that is
      * PENDING (queued, not yet indexed) has zero chunks, and counting chunks would make a re-submit
      * queue it a second time — two indexers racing on one document. The INSERT ... RETURNING is the
      * single source of truth: exactly one caller ever sees inserted=true.
      */
     public Upsert insertOrGetExisting(String title, String source, String language, String metadataJson,
-                                      String contentHash, String body) {
+                                      String contentHash, String body, String ownerId) {
         UUID id = jdbc.query("""
-                INSERT INTO documents (title, source, language, metadata, content_hash, body)
-                VALUES (?, ?, ?, ?::jsonb, ?, ?)
-                ON CONFLICT (content_hash) DO NOTHING
+                INSERT INTO documents (title, source, language, metadata, content_hash, body, owner_id)
+                VALUES (?, ?, ?, ?::jsonb, ?, ?, ?)
+                ON CONFLICT (owner_id, content_hash) DO NOTHING
                 RETURNING id
                 """, rs -> rs.next() ? rs.getObject("id", UUID.class) : null,
-                title, source, language, metadataJson, contentHash, body);
+                title, source, language, metadataJson, contentHash, body, ownerId);
         if (id != null) return new Upsert(id, true);
-        return new Upsert(jdbc.queryForObject("SELECT id FROM documents WHERE content_hash = ?", UUID.class, contentHash), false);
+        return new Upsert(jdbc.queryForObject("SELECT id FROM documents WHERE owner_id = ? AND content_hash = ?", UUID.class, ownerId, contentHash), false);
+    }
+
+    /** Backward compat overload for tests that don't pass owner_id -> uses 'public' */
+    public Upsert insertOrGetExisting(String title, String source, String language, String metadataJson,
+                                      String contentHash, String body) {
+        return insertOrGetExisting(title, source, language, metadataJson, contentHash, body, "public");
     }
 
     public Optional<Document> findById(UUID id) {
         return jdbc.query("SELECT * FROM documents WHERE id = ?", MAPPER, id).stream().findFirst();
     }
 
+    public Optional<Document> findByIdAndOwner(UUID id, String ownerId) {
+        return jdbc.query("SELECT * FROM documents WHERE id = ? AND owner_id = ?", MAPPER, id, ownerId).stream().findFirst();
+    }
+
     public List<Document> findAll(int limit, int offset) {
         return jdbc.query("SELECT * FROM documents ORDER BY created_at DESC LIMIT ? OFFSET ?", MAPPER, limit, offset);
+    }
+
+    public List<Document> findAllByOwner(String ownerId, int limit, int offset) {
+        return jdbc.query("SELECT * FROM documents WHERE owner_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?", MAPPER, ownerId, limit, offset);
     }
 
     public void markIndexed(UUID id) {
@@ -123,6 +139,10 @@ public class DocumentRepository {
 
     public int delete(UUID id) {
         return jdbc.update("DELETE FROM documents WHERE id = ?", id);
+    }
+
+    public int deleteByOwner(UUID id, String ownerId) {
+        return jdbc.update("DELETE FROM documents WHERE id = ? AND owner_id = ?", id, ownerId);
     }
 
     /**

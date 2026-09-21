@@ -1,0 +1,49 @@
+{
+  "title": "Anvesh - Search & Ingest",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Search p50/p95 latency (ms)",
+      "datasource": "Prometheus",
+      "targets": [
+        {"expr": "histogram_quantile(0.5, sum(rate(anvesh_search_seconds_bucket[1m])) by (le, mode)) * 1000", "legendFormat": "p50 {{mode}}"},
+        {"expr": "histogram_quantile(0.95, sum(rate(anvesh_search_seconds_bucket[1m])) by (le, mode)) * 1000", "legendFormat": "p95 {{mode}}"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Ingest p95 (ms)",
+      "datasource": "Prometheus",
+      "targets": [
+        {"expr": "histogram_quantile(0.95, sum(rate(anvesh_ingest_index_seconds_bucket[1m])) by (le)) * 1000", "legendFormat": "p95 ingest"}
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Cache hit rate",
+      "datasource": "Prometheus",
+      "targets": [
+        {"expr": "sum(rate(anvesh_cache_hits_total[1m])) / (sum(rate(anvesh_cache_hits_total[1m])) + sum(rate(anvesh_cache_misses_total[1m])))", "legendFormat": "hit rate"}
+      ],
+      "fieldConfig": {"defaults": {"unit": "percentunit"}}
+    },
+    {
+      "type": "timeseries",
+      "title": "Rate limit denied / allowed",
+      "datasource": "Prometheus",
+      "targets": [
+        {"expr": "sum(rate(anvesh_ratelimit_allowed_total[1m]))", "legendFormat": "allowed"},
+        {"expr": "sum(rate(anvesh_ratelimit_denied_total[1m]))", "legendFormat": "denied"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "HTTP RPS",
+      "datasource": "Prometheus",
+      "targets": [
+        {"expr": "sum(rate(http_server_requests_seconds_count[1m])) by (uri)", "legendFormat": "{{uri}}"}
+      ]
+    }
+  ],
+  "schemaVersion": 30
+}

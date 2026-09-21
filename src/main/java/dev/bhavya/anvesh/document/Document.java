@@ -13,7 +13,8 @@ public record Document(
         Status status,
         String error,
         Instant createdAt,
-        Instant indexedAt
+        Instant indexedAt,
+        String ownerId
 ) {
     public enum Status { PENDING, INDEXED, FAILED }
 }

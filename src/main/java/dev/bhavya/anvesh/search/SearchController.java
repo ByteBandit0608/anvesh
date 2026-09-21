@@ -1,11 +1,10 @@
 package dev.bhavya.anvesh.search;
 
+import dev.bhavya.anvesh.cache.SearchCacheService;
+import dev.bhavya.anvesh.common.RequestContext;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -15,10 +14,14 @@ import java.util.List;
 public class SearchController {
 
     private final SearchService search;
+    private final SearchCacheService cache;
 
-    public SearchController(SearchService search) { this.search = search; }
+    public SearchController(SearchService search, SearchCacheService cache) {
+        this.search = search;
+        this.cache = cache;
+    }
 
-    public record SearchResponse(String query, String mode, int count, long tookMs, List<SearchHit> hits) {}
+    public record SearchResponse(String query, String mode, int count, long tookMs, List<SearchHit> hits, boolean cached) {}
 
     @GetMapping
     @Operation(summary = "Search indexed chunks. mode = hybrid (default) | vector | keyword. "
@@ -37,12 +40,23 @@ public class SearchController {
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("mode must be one of hybrid|vector|keyword");
         }
-        var opts = new SearchService.Options(
-                new SearchRepository.Filter(blankToNull(lang), toMetadataJson(filter)), rrfK, candidateMultiplier);
+        String ownerId = RequestContext.ownerId();
+        var baseFilter = new SearchRepository.Filter(blankToNull(lang), toMetadataJson(filter), ownerId);
+        var opts = new SearchService.Options(baseFilter, rrfK, candidateMultiplier);
         long t0 = System.nanoTime();
+        // Check cache manually to report cached flag
+        String cacheKey = SearchCacheService.key(ownerId, q, m.name(), limit == null ? 10 : limit,
+                baseFilter.language(), baseFilter.metadataJson(), rrfK, candidateMultiplier);
+        boolean wasCached = cache.get(cacheKey) != null;
         List<SearchHit> hits = search.search(q, m, limit, opts);
         long took = (System.nanoTime() - t0) / 1_000_000;
-        return new SearchResponse(q, m.name().toLowerCase(), hits.size(), took, hits);
+        return new SearchResponse(q, m.name().toLowerCase(), hits.size(), took, hits, wasCached);
+    }
+
+    @DeleteMapping("/cache")
+    @Operation(summary = "Invalidate search cache for current owner")
+    public void invalidateCache() {
+        cache.invalidateByOwner(RequestContext.ownerId());
     }
 
     private static String blankToNull(String s) { return s == null || s.isBlank() ? null : s; }

@@ -41,9 +41,15 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage(), req, Map.of());
     }
 
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<ApiError> rateLimit(RateLimitExceededException ex, HttpServletRequest req) {
+        var body = new ApiError(429, "Too Many Requests", ex.getMessage(), req.getRequestURI(), Instant.now(), Map.of("retryAfter", "60"));
+        return ResponseEntity.status(429).header("Retry-After", "60").body(body);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> generic(Exception ex, HttpServletRequest req) {
-        log.error("Unhandled exception on {} {}", req.getMethod(), req.getRequestURI(), ex);
+        log.error("Unhandled exception on {} {} [requestId={}]", req.getMethod(), req.getRequestURI(), RequestContext.requestId(), ex);
         return build(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error", req, Map.of());
     }
 

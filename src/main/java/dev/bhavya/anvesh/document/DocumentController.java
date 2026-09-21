@@ -1,6 +1,7 @@
 package dev.bhavya.anvesh.document;
 
 import dev.bhavya.anvesh.common.NotFoundException;
+import dev.bhavya.anvesh.common.RequestContext;
 import dev.bhavya.anvesh.config.AnveshProperties;
 import dev.bhavya.anvesh.ingest.IngestService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -48,11 +49,12 @@ public class DocumentController {
     public record BatchResponse(int accepted, int duplicates, List<IngestResponse> results) {}
 
     @PostMapping
-    @Operation(summary = "Submit a document for indexing (async). Identical bodies are deduplicated.")
+    @Operation(summary = "Submit a document for indexing (async). Identical bodies are deduplicated per owner.")
     public ResponseEntity<IngestResponse> ingest(@Valid @RequestBody IngestRequest req) {
         String lang = req.language() == null || req.language().isBlank() ? "und" : req.language();
         String metaJson = toJson(req.metadata());
-        IngestService.Submission sub = ingest.submit(req.title(), req.source(), lang, metaJson, req.body());
+        String ownerId = RequestContext.ownerId();
+        IngestService.Submission sub = ingest.submit(req.title(), req.source(), lang, metaJson, req.body(), ownerId);
         if (sub.needsIndex()) ingest.indexAsync(sub.id(), req.body());
 
         HttpStatus status = sub.duplicate() ? HttpStatus.OK : HttpStatus.ACCEPTED;
@@ -87,12 +89,17 @@ public class DocumentController {
 
     @GetMapping("/{id}")
     public Document get(@PathVariable UUID id) {
-        return documents.findById(id).orElseThrow(() -> new NotFoundException("Document " + id + " not found"));
+        String ownerId = RequestContext.ownerId();
+        // Try owner-scoped first, then fallback to any (for public backward compat)
+        return documents.findByIdAndOwner(id, ownerId)
+                .or(() -> documents.findById(id))
+                .orElseThrow(() -> new NotFoundException("Document " + id + " not found"));
     }
 
     @GetMapping
     public List<Document> list(@RequestParam(defaultValue = "20") int limit, @RequestParam(defaultValue = "0") int offset) {
-        return documents.findAll(Math.min(limit, 100), Math.max(offset, 0));
+        String ownerId = RequestContext.ownerId();
+        return documents.findAllByOwner(ownerId, Math.min(limit, 100), Math.max(offset, 0));
     }
 
     /**
@@ -111,7 +118,13 @@ public class DocumentController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable UUID id) {
-        if (documents.delete(id) == 0) throw new NotFoundException("Document " + id + " not found");
+        String ownerId = RequestContext.ownerId();
+        int deleted = documents.deleteByOwner(id, ownerId);
+        if (deleted == 0) {
+            // Fallback: if owner is public, allow deleting public docs (backward compat)
+            if ("public".equals(ownerId)) deleted = documents.delete(id);
+        }
+        if (deleted == 0) throw new NotFoundException("Document " + id + " not found");
     }
 
     private static String toJson(Map<String, Object> m) {
