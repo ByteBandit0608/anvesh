@@ -42,7 +42,7 @@ public class SearchRepository {
     /**
      * WHY the filter is a WHERE clause on the same query, not a Java post-filter: with HNSW, "top-40 then
      * filter to language=te" can return 0 rows if the first 40 neighbours are all English. Postgres
-     * applies the filter *while* walking the index (pgvector ≥0.5 does this), so the caller still gets
+     * applies the filter *while* walking the index (pgvector >=0.5 does this), so the caller still gets
      * `limit` rows. Trade-off: very selective filters make HNSW scan further — fine at our scale.
      */
     public List<SearchHit> vectorSearch(float[] queryVector, int limit, Filter f) {
@@ -51,16 +51,19 @@ public class SearchRepository {
         String where = filterSql(f, args);
         args.add(vec);
         args.add(limit);
-        return jdbc.query("""
+        // WHY explicit "\n" before ORDER BY / LIMIT: text-block concatenation is brittle.
+        // `where` is e.g. " AND d.language = ?" with no trailing newline. The previous version did
+        //   """ + where + """\nORDER BY... but the second block's leading newline is stripped by
+        // the text-block spec, so it became "...?ORDER BY..." -> syntax error near BY when a filter
+        // was present. Explicit "\n" makes the separator unconditional.
+        String sql = """
                 SELECT c.id AS chunk_id, c.document_id, d.title, c.content,
                        1 - (c.embedding <=> ?::vector) AS score
                 FROM chunks c
                 JOIN documents d ON d.id = c.document_id
                 WHERE d.status = 'INDEXED'
-                """ + where + """
-                ORDER BY c.embedding <=> ?::vector
-                LIMIT ?
-                """, MAPPER, args.toArray());
+                """ + where + "\nORDER BY c.embedding <=> ?::vector\nLIMIT ?\n";
+        return jdbc.query(sql, MAPPER, args.toArray());
     }
 
     /**
@@ -87,17 +90,15 @@ public class SearchRepository {
         List<Object> args = new ArrayList<>(List.of(tsquery));
         String where = filterSql(f, args);
         args.add(limit);
-        return jdbc.query("""
+        String sql = """
                 SELECT c.id AS chunk_id, c.document_id, d.title, c.content,
                        ts_rank_cd(c.tsv, q) AS score
                 FROM chunks c
                 JOIN documents d ON d.id = c.document_id,
                      to_tsquery('simple', ?) q
                 WHERE d.status = 'INDEXED' AND c.tsv @@ q
-                """ + where + """
-                ORDER BY score DESC
-                LIMIT ?
-                """, MAPPER, args.toArray());
+                """ + where + "\nORDER BY score DESC\nLIMIT ?\n";
+        return jdbc.query(sql, MAPPER, args.toArray());
     }
 
     /** Appends parameterised predicates; never interpolates user input into SQL. */
@@ -119,7 +120,7 @@ public class SearchRepository {
      * Builds a {@code to_tsquery}-compatible string: terms joined with {@code |}, each quoted
      * so tsquery syntax characters in user input ({@code & | ! ( ) : *}) can't break the query.
      *
-     * <p>Splits on anything that is not a letter, digit <em>or combining mark</em> ({@code \\p{M}}).
+     * <p>Splits on anything that is not a letter, digit <em>or combining mark</em> ({@code \p{M}}).
      * The mark class matters: Telugu vowel signs and the virama (e.g. {@code ి} in {@code వి},
      * {@code ్} in {@code త్}) are combining marks, and splitting on them shreds
      * {@code విద్యుత్} into {@code వ ద య త}. Same applies to Hindi, Tamil, Arabic diacritics, etc.
