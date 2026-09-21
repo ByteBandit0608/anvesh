@@ -2,6 +2,7 @@ package dev.bhavya.anvesh.ingest;
 
 import dev.bhavya.anvesh.common.ConflictException;
 import dev.bhavya.anvesh.common.NotFoundException;
+import dev.bhavya.anvesh.document.Document;
 import dev.bhavya.anvesh.document.DocumentRepository;
 import dev.bhavya.anvesh.embedding.EmbeddingService;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -47,13 +48,26 @@ public class IngestService {
         this.indexTimer = Timer.builder("anvesh.ingest.index").description("Time to chunk+embed+store a document").register(metrics);
     }
 
-    public record Submission(UUID id, boolean duplicate) {}
+    /**
+     * @param duplicate   an identical body was already known
+     * @param status      the document's status right after this call
+     * @param needsIndex  caller must schedule indexAsync(): true for new docs and for FAILED duplicates we won the retry on
+     */
+    public record Submission(UUID id, boolean duplicate, Document.Status status, boolean needsIndex) {}
 
     public Submission submit(String title, String source, String language, String metadataJson, String body) {
         String hash = sha256Hex(body);
-        UUID id = documents.insertOrGetExisting(title, source, language, metadataJson, hash, body);
-        boolean isNew = documents.isNew(id);
-        return new Submission(id, !isNew);
+        DocumentRepository.Upsert up = documents.insertOrGetExisting(title, source, language, metadataJson, hash, body);
+        if (up.inserted()) {
+            return new Submission(up.id(), false, Document.Status.PENDING, true);
+        }
+        // Duplicate. PENDING or INDEXED -> nothing to do (a PENDING one is already queued; re-queuing
+        // it would start a second indexer). FAILED -> retry, but only if we win the compare-and-set.
+        if (documents.markPendingIfFailed(up.id())) {
+            return new Submission(up.id(), true, Document.Status.PENDING, true);
+        }
+        Document.Status current = documents.findById(up.id()).map(Document::status).orElse(Document.Status.PENDING);
+        return new Submission(up.id(), true, current, false);
     }
 
     /**
@@ -101,6 +115,8 @@ public class IngestService {
                 List<float[]> vectors = embeddings.embedAll(chunks);
 
                 tx.executeWithoutResult(status -> {
+                    // Serialise writers per document (see DocumentRepository.lockForIndexing).
+                    documents.lockForIndexing(id);
                     // WHY delete first: makes index() idempotent. A retry after a crash, or a reindex,
                     // replaces the chunk set instead of appending duplicates.
                     documents.deleteChunks(id);

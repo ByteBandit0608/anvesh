@@ -37,9 +37,18 @@ public class DocumentRepository {
             Optional.ofNullable(rs.getTimestamp("indexed_at")).map(Timestamp::toInstant).orElse(null)
     );
 
-    /** Inserts, or returns the existing id when an identical body was already ingested. */
-    public UUID insertOrGetExisting(String title, String source, String language, String metadataJson,
-                                    String contentHash, String body) {
+    /** Result of an idempotent insert: the row's id and whether *this* call created it. */
+    public record Upsert(UUID id, boolean inserted) {}
+
+    /**
+     * Inserts, or returns the existing id when an identical body was already ingested.
+     * WHY "inserted" is returned instead of inferred later from chunk count: a document that is
+     * PENDING (queued, not yet indexed) has zero chunks, and counting chunks would make a re-submit
+     * queue it a second time — two indexers racing on one document. The INSERT ... RETURNING is the
+     * single source of truth: exactly one caller ever sees inserted=true.
+     */
+    public Upsert insertOrGetExisting(String title, String source, String language, String metadataJson,
+                                      String contentHash, String body) {
         UUID id = jdbc.query("""
                 INSERT INTO documents (title, source, language, metadata, content_hash, body)
                 VALUES (?, ?, ?, ?::jsonb, ?, ?)
@@ -47,8 +56,8 @@ public class DocumentRepository {
                 RETURNING id
                 """, rs -> rs.next() ? rs.getObject("id", UUID.class) : null,
                 title, source, language, metadataJson, contentHash, body);
-        if (id != null) return id;
-        return jdbc.queryForObject("SELECT id FROM documents WHERE content_hash = ?", UUID.class, contentHash);
+        if (id != null) return new Upsert(id, true);
+        return new Upsert(jdbc.queryForObject("SELECT id FROM documents WHERE content_hash = ?", UUID.class, contentHash), false);
     }
 
     public Optional<Document> findById(UUID id) {
@@ -57,14 +66,6 @@ public class DocumentRepository {
 
     public List<Document> findAll(int limit, int offset) {
         return jdbc.query("SELECT * FROM documents ORDER BY created_at DESC LIMIT ? OFFSET ?", MAPPER, limit, offset);
-    }
-
-    /**
-     * "New" = no chunks yet. WHY not "status == PENDING"? A FAILED duplicate should also be
-     * treated as new so a re-submit retries it instead of returning 200 duplicate=true forever.
-     */
-    public boolean isNew(UUID id) {
-        return countChunks(id) == 0;
     }
 
     public void markIndexed(UUID id) {
@@ -91,6 +92,24 @@ public class DocumentRepository {
                 UPDATE documents SET status = 'PENDING', error = NULL, indexed_at = NULL
                 WHERE id = ? AND status IN ('INDEXED', 'FAILED')
                 """, id) == 1;
+    }
+
+    /** Same compare-and-set, but only for FAILED docs: used when a duplicate submit should retry. */
+    public boolean markPendingIfFailed(UUID id) {
+        return jdbc.update("UPDATE documents SET status = 'PENDING', error = NULL WHERE id = ? AND status = 'FAILED'", id) == 1;
+    }
+
+    /**
+     * Row-level lock on the document for the rest of the current transaction.
+     * WHY: two index() runs for the same document must not interleave their chunk writes.
+     * Under READ COMMITTED the second transaction's DELETE cannot see the first one's uncommitted
+     * INSERTs, so "delete then insert" alone still collides on UNIQUE (document_id, ordinal).
+     * SELECT ... FOR UPDATE makes the second writer wait until the first commits; it then sees
+     * and deletes the committed chunks before inserting its own. Per-document serialisation,
+     * zero Java locks, works across app instances.
+     */
+    public void lockForIndexing(UUID id) {
+        jdbc.query("SELECT id FROM documents WHERE id = ? FOR UPDATE", rs -> null, id);
     }
 
     public int deleteChunks(UUID documentId) {

@@ -53,12 +53,12 @@ public class DocumentController {
         String lang = req.language() == null || req.language().isBlank() ? "und" : req.language();
         String metaJson = toJson(req.metadata());
         IngestService.Submission sub = ingest.submit(req.title(), req.source(), lang, metaJson, req.body());
-        if (!sub.duplicate()) ingest.indexAsync(sub.id(), req.body());
+        if (sub.needsIndex()) ingest.indexAsync(sub.id(), req.body());
 
         HttpStatus status = sub.duplicate() ? HttpStatus.OK : HttpStatus.ACCEPTED;
         return ResponseEntity.status(status)
                 .location(URI.create("/api/v1/documents/" + sub.id()))
-                .body(new IngestResponse(sub.id(), sub.duplicate() ? "INDEXED" : "PENDING", sub.duplicate()));
+                .body(new IngestResponse(sub.id(), sub.status().name(), sub.duplicate()));
     }
 
     /**

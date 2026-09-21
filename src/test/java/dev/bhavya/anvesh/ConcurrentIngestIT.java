@@ -85,9 +85,11 @@ class ConcurrentIngestIT {
                         .content(json.writeValueAsString(Map.of("documents", batch))))
                 .andExpect(status().isAccepted()).andReturn();
         JsonNode br = json.readTree(res.getResponse().getContentAsString());
-        // A doc still PENDING from wave 1 has 0 chunks, so it's reported as "new" (and re-queued);
-        // that's allowed — the transaction + delete-first makes the second index() a no-op-equivalent.
+        // Every one must be reported as a duplicate — including the ones still PENDING from wave 1.
+        // (An earlier version decided "new" by chunk count, re-queued PENDING docs, and two indexers
+        // raced on UNIQUE (document_id, ordinal). CI caught it. See DocumentRepository.insertOrGetExisting.)
         assertThat(br.get("results").size()).isEqualTo(DOCS);
+        assertThat(br.get("duplicates").asInt()).isEqualTo(DOCS);
         for (JsonNode r : br.get("results")) assertThat(ids).contains(r.get("id").asText());
 
         // Everything settles to INDEXED.

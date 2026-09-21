@@ -45,11 +45,43 @@ class IngestServiceTest {
     }
 
     @Test
-    void happyPath_deletesInsertsMarksIndexed_thenCommits() {
+    void submit_newDocument_isQueued() {
+        when(repo.insertOrGetExisting(any(), any(), any(), any(), any(), any())).thenReturn(new DocumentRepository.Upsert(id, true));
+        IngestService.Submission s = service.submit("t", null, "en", "{}", "body");
+        assertThat(s.duplicate()).isFalse();
+        assertThat(s.needsIndex()).isTrue();
+        assertThat(s.status()).isEqualTo(Document.Status.PENDING);
+        verify(repo, never()).markPendingIfFailed(any());
+    }
+
+    @Test
+    void submit_duplicateStillPending_isNotQueuedAgain() {
+        when(repo.insertOrGetExisting(any(), any(), any(), any(), any(), any())).thenReturn(new DocumentRepository.Upsert(id, false));
+        when(repo.markPendingIfFailed(id)).thenReturn(false);
+        when(repo.findById(id)).thenReturn(Optional.of(doc(Document.Status.PENDING)));
+        IngestService.Submission s = service.submit("t", null, "en", "{}", "body");
+        assertThat(s.duplicate()).isTrue();
+        assertThat(s.needsIndex()).isFalse();          // <- the race fix: no second indexer
+        assertThat(s.status()).isEqualTo(Document.Status.PENDING);
+    }
+
+    @Test
+    void submit_duplicateThatFailed_isRetriedOnce() {
+        when(repo.insertOrGetExisting(any(), any(), any(), any(), any(), any())).thenReturn(new DocumentRepository.Upsert(id, false));
+        when(repo.markPendingIfFailed(id)).thenReturn(true);
+        IngestService.Submission s = service.submit("t", null, "en", "{}", "body");
+        assertThat(s.duplicate()).isTrue();
+        assertThat(s.needsIndex()).isTrue();
+        assertThat(s.status()).isEqualTo(Document.Status.PENDING);
+    }
+
+    @Test
+    void happyPath_locksDeletesInsertsMarksIndexed_thenCommits() {
         service.index(id, "Some body text that will become exactly one chunk.");
 
         InOrder order = inOrder(repo, txm);
         order.verify(txm).getTransaction(any());          // transaction opened AFTER embedding
+        order.verify(repo).lockForIndexing(id);           // row lock is the first statement inside it
         order.verify(repo).deleteChunks(id);
         order.verify(repo).insertChunks(eq(id), anyList(), anyList());
         order.verify(repo).markIndexed(id);
