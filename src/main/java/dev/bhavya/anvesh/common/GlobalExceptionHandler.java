@@ -31,6 +31,11 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, "Validation failed", req, details);
     }
 
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ApiError> conflict(ConflictException ex, HttpServletRequest req) {
+        return build(HttpStatus.CONFLICT, ex.getMessage(), req, Map.of());
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiError> badRequest(IllegalArgumentException ex, HttpServletRequest req) {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage(), req, Map.of());

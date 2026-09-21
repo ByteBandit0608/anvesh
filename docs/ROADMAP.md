@@ -15,15 +15,19 @@ is (a) technically real and (b) becomes a resume bullet or an interview story.
 - **Bullet:** *"Ran a multilingual transformer in-process via ONNX Runtime, enabling cross-lingual Telugu↔English retrieval with zero external API dependencies"*
 
 ## Week 2 — Correctness under concurrency
-- [ ] Make `index()` atomic with `TransactionTemplate` (chunks insert + status flip).
-- [ ] Fix the `synchronized` in `OnnxEmbeddingService.embedAll`: benchmark with/without, decide, document the result.
-- [ ] Add a `POST /documents/batch` endpoint; write a test that fires 50 concurrent ingests and asserts all reach `INDEXED` with correct chunk counts.
+- [x] Make `index()` atomic with `TransactionTemplate` (delete old chunks + insert + status flip). Embedding stays outside the transaction so DB connections aren't held during CPU work.
+- [x] Store the body (V2 migration) and add `POST /documents/{id}/reindex` — retries FAILED docs, re-embeds after a model change. Compare-and-set `UPDATE ... WHERE status IN (...)` prevents two concurrent reindexes.
+- [x] Tests: mock-based `IngestServiceTest` asserts transaction shape (commit/rollback order); `AnveshIntegrationTest` forces `markIndexed` to throw via `@SpyBean` and asserts zero orphan chunks in real Postgres, then recovers via reindex.
+- [x] `synchronized` on `embedAll` replaced by an opt-in lock (`ONNX_SERIALIZE`). **Measure it:** `scripts/bench_ingest.py` with and without; record numbers in EMBEDDINGS.md.
+- [x] `POST /documents/batch` (partial success by design) + `CallerRunsPolicy` back-pressure on the ingest pool.
+- [x] `ConcurrentIngestIT`: 50 docs from 8 threads + the same 50 re-submitted as a batch mid-flight → all INDEXED, contiguous ordinals, no duplicates.
 - **Bullet:** *"Designed an async, idempotent ingestion pipeline (SHA-256 dedup, bounded thread pool) sustaining N docs/sec"* ← measure N.
 
 ## Week 3 — Search quality
-- [ ] Build `eval/` harness: 40 docs, 25 queries with relevance labels, compute Recall@5/10 and MRR for `vector` / `keyword` / `hybrid`.
-- [ ] Tune `rrf-k` and `candidate-multiplier`; plot the effect.
-- [ ] Add metadata filtering: `GET /search?q=...&filter=topic:ml` (JSONB `@>` query, uses the GIN index).
+- [x] `eval/` harness: 34 bilingual docs, 28 labelled queries, Recall@5/10 + MRR + latency per mode, per-language split, hybrid win/loss count.
+- [x] `rrfK` / `candidateMultiplier` overridable per request; `run_eval.py --sweep` tabulates the effect.
+- [x] Filtering: `lang=` and `filter=key:value` (JSONB `@>`), applied inside the SQL so HNSW keeps returning `limit` rows.
+- [ ] **Your task:** run the eval, paste `results.md` numbers into README, and write 5 lines on the worst-scoring query.
 - **Bullet:** *"Hybrid retrieval with Reciprocal Rank Fusion improved Recall@10 by X% over vector-only and Y% over BM25-only on a bilingual eval set"* ← real numbers.
 
 ## Week 4 — Production hardening

@@ -38,14 +38,15 @@ public class DocumentRepository {
     );
 
     /** Inserts, or returns the existing id when an identical body was already ingested. */
-    public UUID insertOrGetExisting(String title, String source, String language, String metadataJson, String contentHash) {
+    public UUID insertOrGetExisting(String title, String source, String language, String metadataJson,
+                                    String contentHash, String body) {
         UUID id = jdbc.query("""
-                INSERT INTO documents (title, source, language, metadata, content_hash)
-                VALUES (?, ?, ?, ?::jsonb, ?)
+                INSERT INTO documents (title, source, language, metadata, content_hash, body)
+                VALUES (?, ?, ?, ?::jsonb, ?, ?)
                 ON CONFLICT (content_hash) DO NOTHING
                 RETURNING id
                 """, rs -> rs.next() ? rs.getObject("id", UUID.class) : null,
-                title, source, language, metadataJson, contentHash);
+                title, source, language, metadataJson, contentHash, body);
         if (id != null) return id;
         return jdbc.queryForObject("SELECT id FROM documents WHERE content_hash = ?", UUID.class, contentHash);
     }
@@ -58,9 +59,12 @@ public class DocumentRepository {
         return jdbc.query("SELECT * FROM documents ORDER BY created_at DESC LIMIT ? OFFSET ?", MAPPER, limit, offset);
     }
 
+    /**
+     * "New" = no chunks yet. WHY not "status == PENDING"? A FAILED duplicate should also be
+     * treated as new so a re-submit retries it instead of returning 200 duplicate=true forever.
+     */
     public boolean isNew(UUID id) {
-        Integer chunks = jdbc.queryForObject("SELECT count(*) FROM chunks WHERE document_id = ?", Integer.class, id);
-        return chunks != null && chunks == 0;
+        return countChunks(id) == 0;
     }
 
     public void markIndexed(UUID id) {
@@ -71,16 +75,46 @@ public class DocumentRepository {
         jdbc.update("UPDATE documents SET status = 'FAILED', error = ? WHERE id = ?", error, id);
     }
 
+    /** Body is fetched separately: it can be 1 MB and list/get responses must not carry it. */
+    public Optional<String> findBody(UUID id) {
+        return jdbc.query("SELECT body FROM documents WHERE id = ?", rs -> rs.next() ? Optional.ofNullable(rs.getString(1)) : Optional.empty(), id);
+    }
+
+    /**
+     * Flip INDEXED/FAILED -> PENDING as a single compare-and-set UPDATE.
+     * WHY: two concurrent reindex requests must not both start indexing. The WHERE clause makes
+     * the DB the arbiter: exactly one caller sees rowcount 1; the other sees 0 and gets a 409.
+     * No Java lock needed, and it works across multiple app instances.
+     */
+    public boolean markPendingForReindex(UUID id) {
+        return jdbc.update("""
+                UPDATE documents SET status = 'PENDING', error = NULL, indexed_at = NULL
+                WHERE id = ? AND status IN ('INDEXED', 'FAILED')
+                """, id) == 1;
+    }
+
+    public int deleteChunks(UUID documentId) {
+        return jdbc.update("DELETE FROM chunks WHERE document_id = ?", documentId);
+    }
+
+    public int countChunks(UUID documentId) {
+        Integer n = jdbc.queryForObject("SELECT count(*) FROM chunks WHERE document_id = ?", Integer.class, documentId);
+        return n == null ? 0 : n;
+    }
+
     public int delete(UUID id) {
         return jdbc.update("DELETE FROM documents WHERE id = ?", id);
     }
 
+    /**
+     * WHY no ON CONFLICT DO NOTHING any more: callers run deleteChunks() first inside the same
+     * transaction, so a conflict here would mean a real bug (two indexers racing) — we want it loud.
+     */
     public void insertChunks(UUID documentId, List<String> contents, List<float[]> embeddings) {
         if (contents.size() != embeddings.size()) throw new IllegalArgumentException("contents/embeddings size mismatch");
         jdbc.batchUpdate("""
                 INSERT INTO chunks (document_id, ordinal, content, embedding)
                 VALUES (?, ?, ?, ?::vector)
-                ON CONFLICT (document_id, ordinal) DO NOTHING
                 """, new BatchPreparedStatementSetter() {
             @Override
             public void setValues(PreparedStatement ps, int i) throws SQLException {

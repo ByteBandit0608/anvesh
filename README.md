@@ -5,7 +5,7 @@
 > using **Reciprocal Rank Fusion**. Embeddings run locally via ONNX — no API keys, works offline,
 > supports 50+ languages including Telugu.
 
-[![CI](https://github.com/<you>/anvesh/actions/workflows/ci.yml/badge.svg)](https://github.com/ByteBandit0608/anvesh/actions)
+[![CI](https://github.com/<you>/anvesh/actions/workflows/ci.yml/badge.svg)](https://github.com/<you>/anvesh/actions)
 
 ## Why this exists
 
@@ -84,8 +84,19 @@ For **real semantic search**, download the multilingual model (see [docs/EMBEDDI
 | `POST` | `/api/v1/documents` | Submit document → `202` + id (or `200` if duplicate) |
 | `GET` | `/api/v1/documents/{id}` | Status: `PENDING` / `INDEXED` / `FAILED` |
 | `GET` | `/api/v1/documents` | List (paginated) |
+| `POST` | `/api/v1/documents/{id}/reindex` | Re-chunk + re-embed → `202`; `409` if already in progress |
 | `DELETE` | `/api/v1/documents/{id}` | Delete document + chunks (cascade) |
+| `POST` | `/api/v1/documents/batch` | Submit up to 100 documents in one call → `202` + per-item results |
 | `GET` | `/api/v1/search?q=&mode=&limit=` | `mode` = `hybrid` (default) · `vector` · `keyword` |
+| | `&lang=te` | Restrict to one document language |
+| | `&filter=topic:ml&filter=year:2024` | JSONB containment on metadata (uses the GIN index). Values match as strings. |
+| | `&rrfK=60&candidateMultiplier=4` | Override fusion parameters per request (for `eval/run_eval.py --sweep`) |
+
+## Evaluation
+
+`python eval/run_eval.py --sweep` runs 28 labelled English/Telugu queries against a 34-document
+bilingual corpus in all three modes and reports Recall@5/10, MRR and latency — see `eval/README.md`
+and the generated `eval/results.md`.
 
 ## Testing
 

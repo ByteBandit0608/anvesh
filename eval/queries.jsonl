@@ -1,3 +1,28 @@
-{"query": "how do I detect data drift", "relevant_doc_titles": ["Drift notes"]}
-{"query": "REST API pagination sorting", "relevant_doc_titles": ["Task Manager README"]}
-{"query": "తెలుగు వెబ్‌సైట్ యాక్సెసిబిలిటీ", "relevant_doc_titles": ["Telugu accessibility audit"]}
+{"query": "why does model accuracy drop over time", "lang": "en", "relevant": ["Data drift", "Concept drift vs data drift", "డేటా డ్రిఫ్ట్"]}
+{"query": "difference between precision and recall", "lang": "en", "relevant": ["Model evaluation metrics", "మోడల్ ఖచ్చితత్వం కొలమానాలు"]}
+{"query": "summer power consumption Hyderabad", "lang": "en", "relevant": ["Telangana electricity demand", "విద్యుత్ డిమాండ్"]}
+{"query": "solar generation evening peak mismatch battery", "lang": "en", "relevant": ["Solar power in Telangana", "సౌర విద్యుత్"]}
+{"query": "how to reduce my electricity bill", "lang": "en", "relevant": ["Household energy saving tips", "ఇంట్లో విద్యుత్ ఆదా చిట్కాలు"]}
+{"query": "screen reader support for Telugu script", "lang": "en", "relevant": ["Telugu web accessibility", "తెలుగు వెబ్ యాక్సెసిబిలిటీ", "Web fonts for Indic scripts"]}
+{"query": "offset vs keyset pagination performance", "lang": "en", "relevant": ["REST pagination", "REST API పేజినేషన్"]}
+{"query": "which status code for async accepted request", "lang": "en", "relevant": ["HTTP status codes for APIs"]}
+{"query": "keep transactions short connection pool", "lang": "en", "relevant": ["Database transactions and ACID", "Connection pooling", "డేటాబేస్ ట్రాన్సాక్షన్లు"]}
+{"query": "HNSW recall memory tradeoff", "lang": "en", "relevant": ["Vector indexes: HNSW vs IVFFlat"]}
+{"query": "stemming stop words tsvector configuration", "lang": "en", "relevant": ["Postgres full-text search"]}
+{"query": "rice farming canal water Godavari", "lang": "en", "relevant": ["Paddy cultivation in Telangana", "వరి సాగు"]}
+{"query": "water saving irrigation for cotton", "lang": "en", "relevant": ["Drip irrigation for cotton", "పత్తికి డ్రిప్ నీటిపారుదల"]}
+{"query": "mosquito breeding standing water fever", "lang": "en", "relevant": ["Dengue prevention", "డెంగ్యూ నివారణ"]}
+{"query": "what to do when someone collapses in the heat", "lang": "en", "relevant": ["Heat stroke first aid", "వడదెబ్బ ప్రథమ చికిత్స"]}
+{"query": "fatigue pale skin iron tablets", "lang": "en", "relevant": ["Iron deficiency anaemia", "రక్తహీనత"]}
+{"query": "వేసవిలో కరెంటు వాడకం ఎందుకు పెరుగుతుంది", "lang": "te", "relevant": ["విద్యుత్ డిమాండ్", "Telangana electricity demand"]}
+{"query": "మోడల్ పనితీరు కాలక్రమేణా ఎందుకు తగ్గుతుంది", "lang": "te", "relevant": ["డేటా డ్రిఫ్ట్", "Data drift", "Concept drift vs data drift"]}
+{"query": "తెలుగు వెబ్‌సైట్ స్క్రీన్ రీడర్", "lang": "te", "relevant": ["తెలుగు వెబ్ యాక్సెసిబిలిటీ", "Telugu web accessibility"]}
+{"query": "డెంగ్యూ దోమలు ఎక్కడ పెరుగుతాయి", "lang": "te", "relevant": ["డెంగ్యూ నివారణ", "Dengue prevention"]}
+{"query": "వరి పంటకు నీరు ఎక్కడి నుంచి వస్తుంది", "lang": "te", "relevant": ["వరి సాగు", "Paddy cultivation in Telangana"]}
+{"query": "ఎండలో పడిపోతే ఏం చేయాలి", "lang": "te", "relevant": ["వడదెబ్బ ప్రథమ చికిత్స", "Heat stroke first aid"]}
+{"query": "సోలార్ పార్కులు ఏ జిల్లాల్లో ఉన్నాయి", "lang": "te", "relevant": ["సౌర విద్యుత్", "Solar power in Telangana"]}
+{"query": "ట్రాన్సాక్షన్ రోల్‌బ్యాక్ అటామిసిటీ", "lang": "te", "relevant": ["డేటాబేస్ ట్రాన్సాక్షన్లు", "Database transactions and ACID"]}
+{"query": "Evidently AI", "lang": "en", "relevant": ["Data drift"]}
+{"query": "HikariCP", "lang": "en", "relevant": ["Connection pooling"]}
+{"query": "Kolmogorov Smirnov", "lang": "en", "relevant": ["Concept drift vs data drift"]}
+{"query": "Mahbubnagar Nalgonda", "lang": "en", "relevant": ["Solar power in Telangana", "సౌర విద్యుత్", "Paddy cultivation in Telangana", "వరి సాగు"]}

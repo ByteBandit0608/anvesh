@@ -21,7 +21,8 @@ public class EmbeddingConfig {
                     Path.of(cfg.onnx().modelPath()),
                     Path.of(cfg.onnx().tokenizerPath()),
                     cfg.onnx().maxTokens(),
-                    cfg.dimension());
+                    cfg.dimension(),
+                    cfg.onnx().serializeInference());
             case "hash" -> {
                 log.warn("Using HASH embedding provider — fine for dev/tests, NOT semantic. Set EMBEDDING_PROVIDER=onnx for real search.");
                 yield new HashEmbeddingService(cfg.dimension());

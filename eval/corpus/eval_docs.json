@@ -1,0 +1,274 @@
+[
+ {
+  "title": "Data drift",
+  "language": "en",
+  "metadata": {
+   "topic": "ml"
+  },
+  "body": "Data drift happens when the statistical properties of input features change over time. A model trained on last year's data can silently degrade. Monitoring tools such as Evidently AI compare feature distributions between a reference window and the current window and raise alerts when drift is detected, so the team can retrain before accuracy collapses."
+ },
+ {
+  "title": "Concept drift vs data drift",
+  "language": "en",
+  "metadata": {
+   "topic": "ml"
+  },
+  "body": "Concept drift is different from data drift: the inputs may look the same, but the relationship between inputs and the target changes. A spam filter sees the same words, yet what counts as spam evolves. Detecting concept drift needs labelled feedback, whereas data drift can be detected from features alone using tests like the Kolmogorov–Smirnov statistic or population stability index."
+ },
+ {
+  "title": "Model evaluation metrics",
+  "language": "en",
+  "metadata": {
+   "topic": "ml"
+  },
+  "body": "Precision measures how many predicted positives are correct; recall measures how many actual positives were found. The F1 score is their harmonic mean. For ranking systems, Recall@k and Mean Reciprocal Rank are used instead, because the position of the first relevant result matters more than a single yes/no decision."
+ },
+ {
+  "title": "డేటా డ్రిఫ్ట్",
+  "language": "te",
+  "metadata": {
+   "topic": "ml"
+  },
+  "body": "మోడల్‌కు శిక్షణ ఇచ్చిన డేటా లక్షణాలు కాలక్రమేణా మారినప్పుడు డేటా డ్రిఫ్ట్ ఏర్పడుతుంది. గత సంవత్సరం డేటాతో శిక్షణ పొందిన మోడల్ నిశ్శబ్దంగా క్షీణించవచ్చు. ఎవిడెంట్లీ వంటి పర్యవేక్షణ సాధనాలు రెఫరెన్స్ విండో మరియు ప్రస్తుత విండో మధ్య ఫీచర్ పంపిణీలను పోల్చి, డ్రిఫ్ట్ కనిపిస్తే హెచ్చరిక ఇస్తాయి."
+ },
+ {
+  "title": "మోడల్ ఖచ్చితత్వం కొలమానాలు",
+  "language": "te",
+  "metadata": {
+   "topic": "ml"
+  },
+  "body": "ప్రెసిషన్ అంటే మోడల్ పాజిటివ్ అని చెప్పిన వాటిలో ఎన్ని నిజంగా సరైనవో చెబుతుంది; రీకాల్ అంటే నిజమైన పాజిటివ్‌లలో ఎన్నింటిని మోడల్ కనుగొందో చెబుతుంది. ఎఫ్-వన్ స్కోరు ఈ రెండింటి హార్మోనిక్ సగటు. ర్యాంకింగ్ వ్యవస్థల్లో రీకాల్ ఎట్ కె మరియు మీన్ రెసిప్రోకల్ ర్యాంక్ వాడతారు."
+ },
+ {
+  "title": "Overfitting and regularisation",
+  "language": "en",
+  "metadata": {
+   "topic": "ml"
+  },
+  "body": "Overfitting occurs when a model memorises training examples instead of learning general patterns, giving high training accuracy but poor test accuracy. Regularisation techniques such as L2 weight decay, dropout and early stopping penalise complexity. Cross-validation reveals overfitting by measuring performance on held-out folds."
+ },
+ {
+  "title": "Telangana electricity demand",
+  "language": "en",
+  "metadata": {
+   "topic": "energy"
+  },
+  "body": "Electricity demand in Telangana peaks in the summer months of April and May when air-conditioning load rises sharply across Hyderabad. The state discom buys short-term power on the exchange to cover the gap and schedules generator maintenance for the monsoon when demand falls."
+ },
+ {
+  "title": "Solar power in Telangana",
+  "language": "en",
+  "metadata": {
+   "topic": "energy"
+  },
+  "body": "Telangana added several gigawatts of solar capacity in the last decade, with large parks in Mahbubnagar and Nalgonda districts. Solar generation peaks at midday, which does not line up with the evening demand peak, so the grid still relies on thermal and hydro plants after sunset. Battery storage is being piloted to shift solar energy into the evening."
+ },
+ {
+  "title": "విద్యుత్ డిమాండ్",
+  "language": "te",
+  "metadata": {
+   "topic": "energy"
+  },
+  "body": "వేసవి కాలంలో ఉష్ణోగ్రత పెరిగినప్పుడు తెలంగాణలో విద్యుత్ డిమాండ్ గరిష్ట స్థాయికి చేరుతుంది। హైదరాబాద్‌లో ఎయిర్ కండిషనర్ల వాడకం పెరగడం దీనికి ప్రధాన కారణం. డిస్కమ్ ఈ లోటును పూడ్చడానికి ఎక్స్ఛేంజ్‌లో స్వల్పకాలిక విద్యుత్ కొనుగోలు చేస్తుంది."
+ },
+ {
+  "title": "సౌర విద్యుత్",
+  "language": "te",
+  "metadata": {
+   "topic": "energy"
+  },
+  "body": "గత దశాబ్దంలో తెలంగాణ అనేక గిగావాట్ల సౌర సామర్థ్యాన్ని జోడించింది. మహబూబ్‌నగర్, నల్గొండ జిల్లాల్లో పెద్ద సోలార్ పార్కులు ఉన్నాయి. సౌర ఉత్పత్తి మధ్యాహ్నం గరిష్టంగా ఉంటుంది, కానీ డిమాండ్ సాయంత్రం ఎక్కువగా ఉంటుంది, కాబట్టి బ్యాటరీ నిల్వను పరీక్షిస్తున్నారు."
+ },
+ {
+  "title": "Household energy saving tips",
+  "language": "en",
+  "metadata": {
+   "topic": "energy"
+  },
+  "body": "Setting the air conditioner to 24 degrees instead of 18 cuts its electricity consumption by roughly a quarter. LED bulbs use a tenth of the power of incandescent ones. Switching off appliances at the wall avoids standby draw, which can be five percent of a household's bill."
+ },
+ {
+  "title": "ఇంట్లో విద్యుత్ ఆదా చిట్కాలు",
+  "language": "te",
+  "metadata": {
+   "topic": "energy"
+  },
+  "body": "ఎయిర్ కండిషనర్‌ను 18 డిగ్రీలకు బదులు 24 డిగ్రీలకు సెట్ చేస్తే దాని కరెంటు వినియోగం సుమారు నాలుగో వంతు తగ్గుతుంది. ఎల్‌ఈడీ బల్బులు సాధారణ బల్బుల కంటే పదో వంతు కరెంటు మాత్రమే వాడతాయి. వాడని పరికరాలను స్విచ్ ఆఫ్ చేయడం వల్ల బిల్లు తగ్గుతుంది."
+ },
+ {
+  "title": "Telugu web accessibility",
+  "language": "en",
+  "metadata": {
+   "topic": "web"
+  },
+  "body": "For Telugu users, screen readers must handle Unicode conjunct consonants correctly and websites must ship fonts that render the script without broken glyphs. An accessibility audit of government sites found missing alt text, unlabeled form fields, and low contrast as the most common WCAG failures."
+ },
+ {
+  "title": "తెలుగు వెబ్ యాక్సెసిబిలిటీ",
+  "language": "te",
+  "metadata": {
+   "topic": "web"
+  },
+  "body": "తెలుగు వాడుకరుల కోసం వెబ్‌సైట్లు అందుబాటులో ఉండాలంటే స్క్రీన్ రీడర్లు తెలుగు యూనికోడ్ అక్షరాలను సరిగ్గా చదవగలగాలి మరియు ఫాంట్లు సరిగ్గా కనిపించాలి. ప్రభుత్వ వెబ్‌సైట్ల ఆడిట్‌లో ఆల్ట్ టెక్స్ట్ లేకపోవడం, ఫారమ్ లేబుల్స్ లేకపోవడం, తక్కువ కాంట్రాస్ట్ అత్యంత సాధారణ లోపాలుగా తేలాయి."
+ },
+ {
+  "title": "REST pagination",
+  "language": "en",
+  "metadata": {
+   "topic": "web"
+  },
+  "body": "Pagination limits how many records an API returns per request. Offset pagination uses page and size parameters and is simple, but gets slow on deep pages because the database still scans the skipped rows. Keyset pagination passes the last seen id instead and stays fast at any depth. Responses should include total count or a next cursor."
+ },
+ {
+  "title": "HTTP status codes for APIs",
+  "language": "en",
+  "metadata": {
+   "topic": "web"
+  },
+  "body": "Return 201 Created with a Location header after creating a resource, 202 Accepted when work continues asynchronously, 204 No Content for successful deletes, 400 for validation failures, 404 when the resource does not exist, and 409 Conflict when the request is valid but the resource's current state forbids it."
+ },
+ {
+  "title": "REST API పేజినేషన్",
+  "language": "te",
+  "metadata": {
+   "topic": "web"
+  },
+  "body": "పేజినేషన్ అంటే ఒక API ఒక అభ్యర్థనకు ఎన్ని రికార్డులు తిరిగి ఇవ్వాలో పరిమితం చేయడం. ఆఫ్‌సెట్ పేజినేషన్ సులభం కానీ లోతైన పేజీలలో నెమ్మదిగా ఉంటుంది, ఎందుకంటే డేటాబేస్ దాటవేసిన వరుసలను కూడా స్కాన్ చేస్తుంది. కీసెట్ పేజినేషన్ చివరి ఐడీని పంపుతుంది కాబట్టి ఎప్పుడూ వేగంగా ఉంటుంది."
+ },
+ {
+  "title": "Web fonts for Indic scripts",
+  "language": "en",
+  "metadata": {
+   "topic": "web"
+  },
+  "body": "Indic scripts such as Telugu, Kannada and Devanagari need OpenType shaping to join consonant clusters. Browsers fall back to a system font when a webfont lacks the required glyphs, which produces boxes or disconnected marks. Subsetting fonts by Unicode range keeps page weight low while covering the script."
+ },
+ {
+  "title": "Postgres full-text search",
+  "language": "en",
+  "metadata": {
+   "topic": "db"
+  },
+  "body": "PostgreSQL full-text search converts documents into a tsvector of lexemes and queries into a tsquery. The 'english' configuration stems words and drops stop words; the 'simple' configuration only lowercases, which is safer for languages without a stemmer. A GIN index on the tsvector column makes the @@ match operator fast."
+ },
+ {
+  "title": "Database transactions and ACID",
+  "language": "en",
+  "metadata": {
+   "topic": "db"
+  },
+  "body": "A transaction groups statements so they either all commit or all roll back. Atomicity guarantees no partial writes survive a failure; isolation controls what concurrent transactions can see. Keep transactions short: a long transaction holds a connection and locks, blocking other work. Do slow computation before opening the transaction."
+ },
+ {
+  "title": "Vector indexes: HNSW vs IVFFlat",
+  "language": "en",
+  "metadata": {
+   "topic": "db"
+  },
+  "body": "pgvector offers two approximate nearest neighbour indexes. IVFFlat clusters vectors and searches the nearest clusters; it builds fast but needs training data and degrades as data changes. HNSW builds a layered graph, is slower to build and uses more memory, but gives better recall and does not need a training step, so it is the default choice for changing data."
+ },
+ {
+  "title": "డేటాబేస్ ట్రాన్సాక్షన్లు",
+  "language": "te",
+  "metadata": {
+   "topic": "db"
+  },
+  "body": "ట్రాన్సాక్షన్ అనేక స్టేట్‌మెంట్లను ఒక సమూహంగా చేస్తుంది, అవి అన్నీ కమిట్ అవుతాయి లేదా అన్నీ రోల్‌బ్యాక్ అవుతాయి. అటామిసిటీ వల్ల వైఫల్యం జరిగినప్పుడు పాక్షిక రాతలు మిగలవు. ట్రాన్సాక్షన్లను చిన్నగా ఉంచాలి: పొడవైన ట్రాన్సాక్షన్ కనెక్షన్‌ను మరియు లాక్‌లను పట్టుకుని ఇతర పనిని అడ్డుకుంటుంది."
+ },
+ {
+  "title": "Connection pooling",
+  "language": "en",
+  "metadata": {
+   "topic": "db"
+  },
+  "body": "Opening a database connection costs a TCP handshake, TLS negotiation and authentication, so applications keep a pool of open connections and borrow one per request. HikariCP defaults to ten connections. If every request holds a connection for a long time, the pool empties and new requests wait, which shows up as latency spikes rather than errors."
+ },
+ {
+  "title": "Paddy cultivation in Telangana",
+  "language": "en",
+  "metadata": {
+   "topic": "agriculture"
+  },
+  "body": "Paddy is the dominant kharif crop in Telangana, transplanted after the monsoon fills tanks and reservoirs. Farmers in Nalgonda and Nizamabad rely on canal water from the Godavari lift schemes. Procurement at the minimum support price happens through cooperative centres, and delays in procurement cause paddy to be dumped on roadsides."
+ },
+ {
+  "title": "వరి సాగు",
+  "language": "te",
+  "metadata": {
+   "topic": "agriculture"
+  },
+  "body": "తెలంగాణలో వరి ప్రధాన ఖరీఫ్ పంట. వర్షాకాలంలో చెరువులు, జలాశయాలు నిండిన తర్వాత నాట్లు వేస్తారు. నల్గొండ, నిజామాబాద్ రైతులు గోదావరి ఎత్తిపోతల పథకాల నుంచి కాలువ నీటిపై ఆధారపడతారు. కనీస మద్దతు ధరకు కొనుగోళ్లు సహకార కేంద్రాల ద్వారా జరుగుతాయి."
+ },
+ {
+  "title": "Drip irrigation for cotton",
+  "language": "en",
+  "metadata": {
+   "topic": "agriculture"
+  },
+  "body": "Cotton grown under drip irrigation uses about forty percent less water than flood irrigation and lets farmers feed fertiliser through the drip lines. The upfront cost of laterals and filters is subsidised by the state, but clogging from hard borewell water is the main maintenance headache."
+ },
+ {
+  "title": "పత్తికి డ్రిప్ నీటిపారుదల",
+  "language": "te",
+  "metadata": {
+   "topic": "agriculture"
+  },
+  "body": "డ్రిప్ నీటిపారుదలతో పండించే పత్తి పంటకు మామూలు పద్ధతి కంటే సుమారు నలభై శాతం తక్కువ నీరు అవసరం. ఎరువులను డ్రిప్ లైన్ల ద్వారానే ఇవ్వవచ్చు. లేటరల్స్, ఫిల్టర్ల ఖర్చుకు ప్రభుత్వం రాయితీ ఇస్తుంది, కానీ బోరు నీటిలోని కాఠిన్యం వల్ల పైపులు మూసుకుపోవడం పెద్ద సమస్య."
+ },
+ {
+  "title": "Soil health cards",
+  "language": "en",
+  "metadata": {
+   "topic": "agriculture"
+  },
+  "body": "Soil health cards report the nitrogen, phosphorus, potassium and micronutrient levels of a farmer's plot along with a fertiliser recommendation. Overuse of urea has pushed soils towards nitrogen excess and zinc deficiency in many mandals, so the card recommends balanced doses to cut input cost and improve yield."
+ },
+ {
+  "title": "Dengue prevention",
+  "language": "en",
+  "metadata": {
+   "topic": "health"
+  },
+  "body": "Dengue is spread by Aedes mosquitoes that breed in clean standing water: coolers, flower pots, discarded tyres. Emptying containers weekly is the most effective control. Symptoms are high fever, severe headache and joint pain; a falling platelet count after the fever breaks is the danger sign that needs hospital care."
+ },
+ {
+  "title": "డెంగ్యూ నివారణ",
+  "language": "te",
+  "metadata": {
+   "topic": "health"
+  },
+  "body": "డెంగ్యూ శుభ్రమైన నిల్వ నీటిలో పెరిగే ఏడిస్ దోమల వల్ల వ్యాపిస్తుంది: కూలర్లు, పూల కుండీలు, పాత టైర్లు. వారానికోసారి నీటి పాత్రలను ఖాళీ చేయడం అత్యంత ప్రభావవంతమైన నివారణ. తీవ్రమైన జ్వరం, తలనొప్పి, కీళ్ల నొప్పులు లక్షణాలు; జ్వరం తగ్గాక ప్లేట్‌లెట్లు పడిపోవడం ప్రమాద సంకేతం."
+ },
+ {
+  "title": "Heat stroke first aid",
+  "language": "en",
+  "metadata": {
+   "topic": "health"
+  },
+  "body": "Heat stroke occurs when body temperature climbs above forty degrees and sweating stops. Move the person into shade, loosen clothing, cool the skin with wet cloths and fan them, and give sips of water only if they are conscious. During May heatwaves in Telangana, outdoor workers should avoid the midday hours."
+ },
+ {
+  "title": "వడదెబ్బ ప్రథమ చికిత్స",
+  "language": "te",
+  "metadata": {
+   "topic": "health"
+  },
+  "body": "శరీర ఉష్ణోగ్రత నలభై డిగ్రీలు దాటి చెమట ఆగిపోయినప్పుడు వడదెబ్బ తగులుతుంది. వ్యక్తిని నీడలోకి తీసుకెళ్లి, దుస్తులు వదులు చేసి, తడి గుడ్డతో చర్మాన్ని చల్లబరచాలి. స్పృహలో ఉంటేనే కొద్దికొద్దిగా నీరు ఇవ్వాలి. మే నెల వేడిగాలుల్లో మధ్యాహ్నం బయట పని చేయకూడదు."
+ },
+ {
+  "title": "Iron deficiency anaemia",
+  "language": "en",
+  "metadata": {
+   "topic": "health"
+  },
+  "body": "Iron deficiency anaemia is common among adolescent girls and pregnant women in India. Symptoms include fatigue, pale skin and breathlessness on exertion. Weekly iron and folic acid tablets, plus vitamin C with meals to improve absorption, are the standard public health response; tea with meals reduces iron uptake."
+ },
+ {
+  "title": "రక్తహీనత",
+  "language": "te",
+  "metadata": {
+   "topic": "health"
+  },
+  "body": "ఐరన్ లోపం వల్ల వచ్చే రక్తహీనత భారతదేశంలో కౌమార బాలికలు, గర్భిణుల్లో సాధారణం. అలసట, పాలిపోయిన చర్మం, కొంచెం పని చేస్తేనే ఆయాసం లక్షణాలు. వారానికోసారి ఐరన్, ఫోలిక్ యాసిడ్ మాత్రలు, భోజనంతో విటమిన్ సి తీసుకోవడం ప్రామాణిక చర్యలు; భోజనంతో టీ తాగితే ఐరన్ శోషణ తగ్గుతుంది."
+ }
+]

@@ -38,6 +38,9 @@ anvesh:
       model-path: ${ONNX_MODEL_PATH:models/paraphrase-multilingual-MiniLM-L12-v2/model.onnx}
       tokenizer-path: ${ONNX_TOKENIZER_PATH:models/paraphrase-multilingual-MiniLM-L12-v2/tokenizer.json}
       max-tokens: 256
+      # true  = one inference at a time (Week-0 behaviour). false = concurrent ingest threads run inference in parallel.
+      # Benchmark both with scripts/bench_ingest.py — the answer depends on your core count.
+      serialize-inference: ${ONNX_SERIALIZE:false}
   chunking:
     max-chars: 800
     overlap-chars: 100
@@ -46,3 +49,5 @@ anvesh:
     max-limit: 50
     rrf-k: 60
     candidate-multiplier: 4   # each retriever fetches limit*multiplier before fusion
+  ingest:
+    max-batch-size: 100       # POST /documents/batch cap; the ingest queue holds 500

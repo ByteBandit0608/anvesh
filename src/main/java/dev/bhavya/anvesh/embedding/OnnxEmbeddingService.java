@@ -31,8 +31,23 @@ public class OnnxEmbeddingService implements EmbeddingService, AutoCloseable {
     private final HuggingFaceTokenizer tokenizer;
     private final int dimension;
     private final boolean needsTokenTypeIds;
+    /** Non-null only when inference is serialised (see constructor). */
+    private final Object inferenceLock;
 
     public OnnxEmbeddingService(Path modelPath, Path tokenizerPath, int maxTokens, int dimension) {
+        this(modelPath, tokenizerPath, maxTokens, dimension, false);
+    }
+
+    /**
+     * @param serializeInference if true, only one embedAll() runs at a time (Week-0 behaviour).
+     *   WHY it's a flag and not just deleted: OrtSession.run() and the HuggingFace tokenizer are both
+     *   documented thread-safe, so the lock was never needed for correctness — but whether removing it
+     *   is *faster* depends on core count: ONNX Runtime already parallelises inside one run() call
+     *   (intra-op threads), so N concurrent runs on N cores mostly fight each other. Measure with
+     *   scripts/bench_ingest.py before deciding; record the numbers in docs/EMBEDDINGS.md.
+     */
+    public OnnxEmbeddingService(Path modelPath, Path tokenizerPath, int maxTokens, int dimension, boolean serializeInference) {
+        this.inferenceLock = serializeInference ? new Object() : null;
         try {
             this.env = OrtEnvironment.getEnvironment();
             OrtSession.SessionOptions opts = new OrtSession.SessionOptions();
@@ -46,7 +61,7 @@ public class OnnxEmbeddingService implements EmbeddingService, AutoCloseable {
                     .build();
             this.dimension = dimension;
             this.needsTokenTypeIds = session.getInputNames().contains("token_type_ids");
-            log.info("Loaded ONNX embedding model {} (inputs={})", modelPath, session.getInputNames());
+            log.info("Loaded ONNX embedding model {} (inputs={}, serializeInference={})", modelPath, session.getInputNames(), serializeInference);
         } catch (OrtException | java.io.IOException e) {
             throw new IllegalStateException("Failed to load ONNX embedding model from " + modelPath, e);
         }
@@ -61,9 +76,12 @@ public class OnnxEmbeddingService implements EmbeddingService, AutoCloseable {
     }
 
     @Override
-    public synchronized List<float[]> embedAll(List<String> texts) {
-        // OrtSession.run is thread-safe, but the tokenizer batch + tensor lifecycle is simpler
-        // to reason about serialised. Week-3 task: benchmark and remove `synchronized` if safe.
+    public List<float[]> embedAll(List<String> texts) {
+        if (inferenceLock == null) return doEmbed(texts);
+        synchronized (inferenceLock) { return doEmbed(texts); }
+    }
+
+    private List<float[]> doEmbed(List<String> texts) {
         Encoding[] encodings = tokenizer.batchEncode(texts);
         int batch = encodings.length;
         int seqLen = encodings[0].getIds().length;

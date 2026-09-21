@@ -84,6 +84,31 @@ Reference numbers with the quantised model:
   **Week-1 task:** log `token_count` per chunk and tune `anvesh.chunking.max-chars`.
 - `embedAll` is `synchronized`. Fine for one ingest thread, wasteful for four. **Week-2 task.**
 
+## Concurrency: is inference serialised?
+
+Week 0 marked `embedAll` `synchronized` "to be safe". Both `OrtSession.run()` and the DJL
+`HuggingFaceTokenizer` are thread-safe, so the lock was never needed for *correctness*. Whether it
+helps *throughput* is an empirical question: ONNX Runtime already uses intra-op threads inside a
+single `run()`, so N concurrent runs on N cores mostly compete for the same cores. The lock is now
+opt-in via `ONNX_SERIALIZE=true` (default: off).
+| `ONNX_SERIALIZE=false` (default) | 4 (pool=2) | 2.2 | 800 |
+| `ONNX_SERIALIZE=true`            | 4 (pool=2) | 1.7 | 1099* |
+
+*lifetime average including earlier runs; true value higher.
+
+Decision: keep concurrent inference (default). The lock was never needed for correctness
+(OrtSession.run and the tokenizer are thread-safe) and costs ~25% throughput even with only
+2 ingest threads over a remote DB; the gap should widen with more threads and a local Postgres.
+
+**Benchmark (fill in — `scripts/bench_ingest.py --docs 40`, run twice):**
+
+| setting | cores | end-to-end docs/s | mean index() ms |
+|---|---|---|---|
+| `ONNX_SERIALIZE=false` (default) | _n_ | _?_ | _?_ |
+| `ONNX_SERIALIZE=true` | _n_ | _?_ | _?_ |
+
+Decision: _write one sentence here once you have numbers._
+
 ## Alternatives
 
 | Model | Dim | Notes |
