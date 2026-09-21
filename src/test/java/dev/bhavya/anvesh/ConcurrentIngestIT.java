@@ -44,7 +44,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @TestPropertySource(properties = {
         "anvesh.embedding.provider=hash",
         "anvesh.chunking.max-chars=120",
-        "anvesh.chunking.overlap-chars=20"
+        "anvesh.chunking.overlap-chars=20",
+        "anvesh.rate-limit.enabled=false",
+        "anvesh.cache.enabled=false"
 })
 class ConcurrentIngestIT {
 

@@ -148,6 +148,11 @@
                         <include>**/*Test.java</include>
                         <include>**/*IT.java</include>
                     </includes>
+                    <!-- WHY: Mockito 5.x inline mock maker needs self-attach on JDK 17.
+                         On some Windows JDKs (Eclipse Temurin) self-attach is disabled by default
+                         and Byte Buddy's external attach fails → "Could not self-attach".
+                         This flag restores the pre-JDK17 behaviour for tests. -->
+                    <argLine>-Djdk.attach.allowAttachSelf=true</argLine>
                 </configuration>
             </plugin>
         </plugins>

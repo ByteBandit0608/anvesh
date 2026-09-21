@@ -42,7 +42,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Testcontainers(disabledWithoutDocker = true)
 @SpringBootTest
 @AutoConfigureMockMvc
-@TestPropertySource(properties = "anvesh.embedding.provider=hash")
+@TestPropertySource(properties = {"anvesh.embedding.provider=hash","anvesh.rate-limit.enabled=false","anvesh.cache.enabled=false"})
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class AnveshIntegrationTest {
 

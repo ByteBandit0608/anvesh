@@ -1,0 +1,7 @@
+anvesh:
+  rate-limit:
+    enabled: false
+  cache:
+    enabled: false
+  security:
+    require-api-key: false
