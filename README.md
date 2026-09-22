@@ -97,6 +97,10 @@ For **real semantic search**, download the multilingual model (see [docs/EMBEDDI
 `python eval/run_eval.py --sweep` runs 28 labelled English/Telugu queries against a 34-document
 bilingual corpus in all three modes and reports Recall@5/10, MRR and latency — see `eval/README.md`
 and the generated `eval/results.md`.
+- Local Docker stack: 5 containers (app, pgvector, redis, prometheus, grafana) all healthy
+- Search cache: p95 52ms → 0ms on hit, 94.9% hit rate after 20 requests
+- Prometheus scraping anvesh @ 5ms, Grafana dashboard provisioned
+- API keys multi-tenancy with owner_id isolation, Bucket4j rate limiting (60/min)
 
 ## Testing
 
